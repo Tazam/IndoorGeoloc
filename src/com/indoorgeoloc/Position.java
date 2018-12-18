@@ -23,12 +23,12 @@ import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer
 
 /**
  * @author Gaetan
+ * Classe de calcule de la position d'un objet par multilateration
  *
  */
 public class Position {
 	private LinkedHashMap<String,double[]> balisePosition;
 	private LinkedHashMap<String,Double> distanceInfo;
-	private boolean tridimention;
 	private Date lastUpdate;
 	private double[] centroid;
 	private String urlBdd;
@@ -38,10 +38,9 @@ public class Position {
 	
 	/**
 	 * 
-	 * @param tridimention boolean : true pour un travail en 3D, false pour du 2D
 	 * @param balisePosition LinkedHashMap<String,double[][]> : map des positions des balises.
 	 */
-	public Position(boolean tridimention, LinkedHashMap<String,double[]> balisePosition)
+	public Position(LinkedHashMap<String,double[]> balisePosition)
 	{
 		/* Chargement du driver JDBC pour MySQL */
 		
@@ -52,7 +51,6 @@ public class Position {
 			e1.printStackTrace();
 		}
 		
-		this.tridimention = tridimention;
 		this.balisePosition = balisePosition;
 		distanceInfo = new LinkedHashMap<>();
 		this.centroid = null;
@@ -142,7 +140,7 @@ public class Position {
 		
 		boolean mooved = updateData();
 		
-		// Si 
+		// Si on à pas assez de données on laisse la position tel quelle
 		if (distanceInfo.size()<3 || !mooved)
 			return false;
 		
