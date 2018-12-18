@@ -1,6 +1,11 @@
 package com.indoorgeoloc;
 
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Date;
 import java.util.LinkedHashMap;
 
@@ -26,6 +31,10 @@ public class Position {
 	private boolean tridimention;
 	private Date lastUpdate;
 	private double[] centroid;
+	private String urlBdd;
+	private String userNameBdd;
+	private String userPswBdd;
+	Connection connexion;
 	
 	/**
 	 * 
@@ -34,12 +43,24 @@ public class Position {
 	 */
 	public Position(boolean tridimention, LinkedHashMap<String,double[]> balisePosition)
 	{
+		/* Chargement du driver JDBC pour MySQL */
+		
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+		} catch (ClassNotFoundException e1) {
+			System.out.println("Erreur du chargement du driver MySQL");
+			e1.printStackTrace();
+		}
+		
 		this.tridimention = tridimention;
 		this.balisePosition = balisePosition;
 		distanceInfo = new LinkedHashMap<>();
 		this.centroid = null;
 		this.lastUpdate = new Date();
-		
+		this.urlBdd = "jdbc:mysql://10.26.3.102:3306/geoloc";
+		this.userNameBdd = "defi";
+		this.userPswBdd = "defi";
+		this.connexion = null;
 	}
 	
 	public double[] getCentroid()
@@ -47,18 +68,70 @@ public class Position {
 		return this.centroid;
 	}
 	
+	private double rssiToDistance(double rssi)
+	{
+		//TODO mesurer la valeur du rssi à 1 metre
+		// rssi à 1m
+		double a = 0;
+		double lambda = 20.5;
+		double res = Math.pow(10.0, (rssi-a)/lambda);
+		return res;
+	}
+	
 	/**
-	 * Récupère et stoke dans baliseInfo les dernière informations de la bdd
+	 * Récupère et stocke dans baliseInfo les dernière informations de la bdd
 	 * @return boolean : true si la position à changé, false sinon
 	 * 
 	 */
 	private boolean updateData()
 	{
-		this.distanceInfo.clear();
-		this.distanceInfo.put("1", (Double)3.0);
-		this.distanceInfo.put("2", (Double)4.0);
-		this.distanceInfo.put("3", (Double)3.0);
-		return true;
+		try {
+
+		    connexion = DriverManager.getConnection( this.urlBdd, this.userNameBdd, this.userPswBdd );
+
+
+		    Statement statement = connexion.createStatement();
+		    ResultSet resultat = statement.executeQuery( "SELECT *  FROM hist_rssi ORDER BY date_pos DESC LIMIT 1;" );
+		    LinkedHashMap<String,Double> distanceInfoTemp = new LinkedHashMap<String, Double>();
+		    while ( resultat.next() ) {
+		    	this.lastUpdate = resultat.getDate("date_pos");
+		    	distanceInfoTemp.put("1",rssiToDistance(resultat.getDouble("rssi_bal_1")));
+		    	distanceInfoTemp.put("2",rssiToDistance(resultat.getDouble("rssi_bal_2")));
+		    	distanceInfoTemp.put("3",rssiToDistance(resultat.getDouble("rssi_bal_3")));
+		    	distanceInfoTemp.put("4",rssiToDistance(resultat.getDouble("rssi_bal_4")));
+		    	distanceInfoTemp.put("5",rssiToDistance(resultat.getDouble("rssi_bal_5")));
+		    }
+		    
+		    if (this.distanceInfo.equals(distanceInfoTemp))
+		    	return false;
+		    
+		    this.distanceInfo.clear();
+		    this.distanceInfo = distanceInfoTemp;
+
+
+		} catch ( SQLException e ) {
+
+			System.out.println("Erreur de connection à la bdd");
+		    return false;
+
+		} finally {
+
+		    if ( connexion != null )
+
+		        try {
+
+		            /* Fermeture de la connexion */
+
+		            connexion.close();
+
+		        } catch ( SQLException ignore ) {
+
+		            /* Si une erreur survient lors de la fermeture, il suffit de l'ignorer. */
+
+		        }
+
+		}
+		return false;
 	}
 	/**
 	 * Met à jour la position en fonction de baliseInfo.
@@ -69,7 +142,6 @@ public class Position {
 		
 		boolean mooved = updateData();
 		
-		// TODO throw exception à la place du bool
 		// Si 
 		if (distanceInfo.size()<3 || !mooved)
 			return false;

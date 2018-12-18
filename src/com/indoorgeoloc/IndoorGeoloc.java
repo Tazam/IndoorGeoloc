@@ -25,6 +25,7 @@ public class IndoorGeoloc {
 		Position p = new Position(false,balisePosition);
 		p.updatePosition();
 		System.out.println(p.getCentroid()[0]+"  "+p.getCentroid()[1]);
+		
 
 	}
 
