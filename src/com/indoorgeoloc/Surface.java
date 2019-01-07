@@ -24,7 +24,13 @@ class Surface extends JPanel implements ActionListener {
 	private final int DELAY = 1000;
     private Timer timer;
     private Image image;
+    /**
+     * Image Width
+     */
     private int iw;
+    /**
+     * Image Height
+     */
     private int ih;
 
     public Surface() {
@@ -50,6 +56,20 @@ class Surface extends JPanel implements ActionListener {
         
         return timer;
     }
+    
+    private double[] chooseImageDimension()
+	{
+		double [] res = {iw,ih};
+		
+		if (iw<getWidth() && ih<getHeight())
+		{
+			return res;
+		}
+		
+		
+		
+		return res;
+	}
 
     private void doDrawing(Graphics g) {
 
@@ -81,10 +101,30 @@ class Surface extends JPanel implements ActionListener {
 
         int w = getWidth();
         int h = getHeight();
+        
+        /*
+        // Ajout de la balise 1 sur la map
+        g2d.fill(new Rectangle2D.Double(position.getBaliseX("1"),position.getBaliseY("1"), 10, 10));
+
+     // Ajout de la balise 2 sur la map
+        g2d.fill(new Rectangle2D.Double(position.getBaliseX("2"),position.getBaliseY("2"), 10, 10));
+        
+     // Ajout de la balise 3 sur la map
+        g2d.fill(new Rectangle2D.Double(position.getBaliseX("3"),position.getBaliseY("3"), 10, 10));
+        
+     // Ajout de la balise 4 sur la map
+        g2d.fill(new Rectangle2D.Double(position.getBaliseX("4"),position.getBaliseY("4"), 10, 10));
+        
+     // Ajout de la balise 5 sur la map
+        g2d.fill(new Rectangle2D.Double(position.getBaliseX("5"),position.getBaliseY("5"), 10, 10));
+        */
 
         	Random r = new Random();
             int x = Math.abs(r.nextInt()) % w;
             int y = Math.abs(r.nextInt()) % h;
+            x=781+150;
+            y=56+182;
+            
             g2d.fill(new Ellipse2D.Double(x, y, 10, 10));
         
             

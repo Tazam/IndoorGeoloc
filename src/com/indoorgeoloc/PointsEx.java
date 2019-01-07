@@ -21,6 +21,8 @@ public class PointsEx extends JFrame {
         initUI();
     }
 	
+	
+	
 	private void initUI2() {
 
         add(new Surface());

@@ -55,10 +55,21 @@ public class Position {
 		distanceInfo = new LinkedHashMap<>();
 		this.centroid = null;
 		this.lastUpdate = new Date();
-		this.urlBdd = "jdbc:mysql://10.26.3.102:3306/geoloc";
+		//this.urlBdd = "jdbc:mysql://10.120.14.149:3306/geoloc";
+		this.urlBdd = "jdbc:mysql://localhost:3306/geoloc?zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=UTC";
 		this.userNameBdd = "defi";
 		this.userPswBdd = "defi";
 		this.connexion = null;
+	}
+	
+	public double getBaliseX(String baliseNum)
+	{
+		return this.balisePosition.get(baliseNum)[0];
+	}
+	
+	public double getBaliseY(String baliseNum)
+	{
+		return this.balisePosition.get(baliseNum)[1];
 	}
 	
 	public double[] getCentroid()
@@ -70,11 +81,25 @@ public class Position {
 	{
 		//TODO mesurer la valeur du rssi à 1 metre
 		// rssi à 1m
-		double a = 0;
+		double a = 42;
 		double lambda = 20.5;
 		double res = Math.pow(10.0, (rssi-a)/lambda);
+		res = res*100;
+		System.out.println("rssiToDistance ("+rssi+") --> "+res);
 		return res;
 	}
+	
+	private boolean isValid(LinkedHashMap<String,Double> map)
+	{
+		int cpt=map.size();
+		for (String key : map.keySet())
+		{
+			if (map.get(key)==null)
+				cpt--;
+		}
+		return cpt > 2;
+	}
+	
 	
 	/**
 	 * Récupère et stocke dans baliseInfo les dernière informations de la bdd
@@ -89,7 +114,7 @@ public class Position {
 
 
 		    Statement statement = connexion.createStatement();
-		    ResultSet resultat = statement.executeQuery( "SELECT *  FROM hist_rssi ORDER BY date_pos DESC LIMIT 1;" );
+		    ResultSet resultat = statement.executeQuery( "SELECT *  FROM hist_rssi ORDER BY date_pos DESC;" );
 		    LinkedHashMap<String,Double> distanceInfoTemp = new LinkedHashMap<String, Double>();
 		    while ( resultat.next() ) {
 		    	this.lastUpdate = resultat.getDate("date_pos");
@@ -98,18 +123,23 @@ public class Position {
 		    	distanceInfoTemp.put("3",rssiToDistance(resultat.getDouble("rssi_bal_3")));
 		    	distanceInfoTemp.put("4",rssiToDistance(resultat.getDouble("rssi_bal_4")));
 		    	distanceInfoTemp.put("5",rssiToDistance(resultat.getDouble("rssi_bal_5")));
-		    }
 		    
-		    if (this.distanceInfo.equals(distanceInfoTemp))
-		    	return false;
+		    	if (this.distanceInfo.equals(distanceInfoTemp))
+			    	return false;
+		    	
+		    	if (isValid(distanceInfoTemp))
+		    		break;
+		    	
+		    	
+		    }
 		    
 		    this.distanceInfo.clear();
 		    this.distanceInfo = distanceInfoTemp;
 
-
 		} catch ( SQLException e ) {
 
 			System.out.println("Erreur de connection à la bdd");
+			e.printStackTrace(System.out);
 		    return false;
 
 		} finally {
@@ -129,7 +159,7 @@ public class Position {
 		        }
 
 		}
-		return false;
+		return true;
 	}
 	/**
 	 * Met à jour la position en fonction de baliseInfo.
