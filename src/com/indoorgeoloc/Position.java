@@ -34,6 +34,7 @@ public class Position {
 	private String userNameBdd;
 	private String userPswBdd;
 	Connection connexion;
+	private int nbBaliseActive;
 
 	/**
 	 * 
@@ -59,6 +60,7 @@ public class Position {
 		this.userNameBdd = "defi";
 		this.userPswBdd = "defi";
 		this.connexion = null;
+		nbBaliseActive = 0;
 	}
 
 	public double getBaliseX(String baliseNum) {
@@ -219,8 +221,13 @@ public class Position {
 		centroid = optimum.getPoint().toArray();
 		// System.out.println("RSSI: "+distances.toString());
 		
-
+		this.nbBaliseActive = this.distanceInfo.size();
 		return true;
+	}
+	
+	public int getNbBaliseActive()
+	{
+		return this.nbBaliseActive;
 	}
 
 }

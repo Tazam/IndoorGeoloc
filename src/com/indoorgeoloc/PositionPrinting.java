@@ -167,6 +167,17 @@ public class PositionPrinting extends JPanel implements ActionListener {
 	        		this.xCurr = distToPx(this.position.getCentroid()[0])+150;
 	        		this.yCurr = distToPx(this.position.getCentroid()[1])+182;
 	        		System.out.println("xCurr: "+this.xCurr+" yCurr: "+this.yCurr);
+	        		int precision = this.position.getNbBaliseActive();
+	        		if (precision==0||precision==3) {
+	        			g2d.setPaint(Color.red);
+	        		}
+	        		if (precision==4) {
+	        			g2d.setPaint(Color.orange);
+	        		}
+	        		if (precision==5) {
+	        			g2d.setPaint(Color.green);
+	        		}
+	        		
 	        	}
 	            
 	            g2d.fill(new Ellipse2D.Double(xCurr, yCurr, 10, 10));
