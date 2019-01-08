@@ -32,7 +32,7 @@ public class PositionPrinting extends JPanel implements ActionListener {
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
-		private final int DELAY = 5000;
+		private final int DELAY = 1000;
 	    private Timer timer;
 	    private Image image;
 	    private Position position;
@@ -162,10 +162,10 @@ public class PositionPrinting extends JPanel implements ActionListener {
 	           */
 	        
 	        	Boolean mooved = this.position.updatePosition();
-	        	if (true)
+	        	if (mooved)
 	        	{
-	        		this.xCurr = this.position.getCentroid()[0];
-	        		this.yCurr = this.position.getCentroid()[1];
+	        		this.xCurr = distToPx(this.position.getCentroid()[0])+150;
+	        		this.yCurr = distToPx(this.position.getCentroid()[1])+182;
 	        		System.out.println("xCurr: "+this.xCurr+" yCurr: "+this.yCurr);
 	        	}
 	            
