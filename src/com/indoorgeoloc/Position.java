@@ -35,6 +35,10 @@ public class Position {
 	private String userPswBdd;
 	Connection connexion;
 	private int nbBaliseActive;
+	private Double[] lastRSSI;
+	private Double[] lastDistance;
+	private String lastDate;
+	private Integer lastId;
 
 	/**
 	 * 
@@ -61,6 +65,21 @@ public class Position {
 		this.userPswBdd = "defi";
 		this.connexion = null;
 		nbBaliseActive = 0;
+		this.lastRSSI = new Double[5];
+		this.lastDistance = new Double[5];
+		this.lastId = 0;
+	}
+
+	public Double getLastRSSI(int numBalise) {
+		return this.lastRSSI[numBalise - 1];
+	}
+	
+	public Double getLastDistance(int numBalise) {
+		return this.lastDistance[numBalise-1];
+	}
+
+	public String getLastDate() {
+		return this.lastDate;
 	}
 
 	public double getBaliseX(String baliseNum) {
@@ -94,7 +113,7 @@ public class Position {
 
 	private double rssiToDistance(double rssi) {
 		if (true) {
-			double res2= calculateDistance(rssi);
+			double res2 = calculateDistance(rssi);
 			System.out.println("rssiToDistance (" + rssi + ") --> " + res2);
 			return res2;
 		}
@@ -132,6 +151,86 @@ public class Position {
 		}
 
 	}
+	
+	private boolean rollbackPosition() {
+		try { 
+
+			connexion = DriverManager.getConnection(this.urlBdd, this.userNameBdd, this.userPswBdd);
+
+			Statement statement = connexion.createStatement();
+			ResultSet resultat = null;
+			
+			if (this.lastId==0) {
+				resultat = statement.executeQuery("SELECT *  FROM hist_rssi ORDER BY date_pos DESC;");
+				//resultat = statement.executeQuery("SELECT * FROM hist_rssi ORDER BY date_pos DESC limit 1;");
+				if (resultat.next()) {
+					this.lastId = resultat.getInt("id_hist_rssi");
+				}
+			}
+			
+			resultat = null;
+			LinkedHashMap<String, Double> distanceInfoTemp = new LinkedHashMap<String, Double>();
+			
+			do {
+					resultat = statement.executeQuery("SELECT * FROM hist_rssi where id_hist_rssi = '"+this.lastId+"' ORDER BY date_pos DESC limit 1;");
+					if (resultat==null) {
+						this.lastId--;
+						continue;
+					}
+					
+					if (resultat.next()) {
+						this.lastUpdate = resultat.getDate("date_pos");
+						distanceInfoTemp.put("1", rssiToDistance(resultat.getDouble("rssi_bal_1")));
+						distanceInfoTemp.put("2", rssiToDistance(resultat.getDouble("rssi_bal_2")));
+						distanceInfoTemp.put("3", rssiToDistance(resultat.getDouble("rssi_bal_3")));
+						distanceInfoTemp.put("4", rssiToDistance(resultat.getDouble("rssi_bal_4")));
+						distanceInfoTemp.put("5", rssiToDistance(resultat.getDouble("rssi_bal_5")));
+						this.lastRSSI[0] = resultat.getDouble("rssi_bal_1");
+						this.lastRSSI[1] = resultat.getDouble("rssi_bal_2");
+						this.lastRSSI[2] = resultat.getDouble("rssi_bal_3");
+						this.lastRSSI[3] = resultat.getDouble("rssi_bal_4");
+						this.lastRSSI[4] = resultat.getDouble("rssi_bal_5");
+						this.lastDate = resultat.getString("date_pos");
+						this.lastDistance[0] = rssiToDistance(this.lastRSSI[0]);
+						this.lastDistance[1] = rssiToDistance(this.lastRSSI[1]);
+						this.lastDistance[2] = rssiToDistance(this.lastRSSI[2]);
+						this.lastDistance[3] = rssiToDistance(this.lastRSSI[3]);
+						this.lastDistance[4] = rssiToDistance(this.lastRSSI[4]);
+					}
+					this.lastId--;
+					
+					if (isValid(distanceInfoTemp))
+						break;
+				
+			}while (this.lastId>0);
+
+			clearDistanceInfo(distanceInfoTemp);
+			return true;
+
+		} catch (SQLException e) {
+
+			System.out.println("Erreur de connection à la bdd");
+			e.printStackTrace(System.out);
+			return false;
+
+		} finally {
+
+			if (connexion != null)
+
+				try {
+
+					/* Fermeture de la connexion */
+
+					connexion.close();
+
+				} catch (SQLException ignore) {
+
+					/* Si une erreur survient lors de la fermeture, il suffit de l'ignorer. */
+
+				}
+
+		}
+	}
 
 	/**
 	 * Récupère et stocke dans baliseInfo les dernière informations de la bdd
@@ -154,6 +253,17 @@ public class Position {
 				distanceInfoTemp.put("3", rssiToDistance(resultat.getDouble("rssi_bal_3")));
 				distanceInfoTemp.put("4", rssiToDistance(resultat.getDouble("rssi_bal_4")));
 				distanceInfoTemp.put("5", rssiToDistance(resultat.getDouble("rssi_bal_5")));
+				this.lastRSSI[0] = resultat.getDouble("rssi_bal_1");
+				this.lastRSSI[1] = resultat.getDouble("rssi_bal_2");
+				this.lastRSSI[2] = resultat.getDouble("rssi_bal_3");
+				this.lastRSSI[3] = resultat.getDouble("rssi_bal_4");
+				this.lastRSSI[4] = resultat.getDouble("rssi_bal_5");
+				this.lastDate = resultat.getString("date_pos");
+				this.lastDistance[0] = rssiToDistance(this.lastRSSI[0]);
+				this.lastDistance[1] = rssiToDistance(this.lastRSSI[1]);
+				this.lastDistance[2] = rssiToDistance(this.lastRSSI[2]);
+				this.lastDistance[3] = rssiToDistance(this.lastRSSI[3]);
+				this.lastDistance[4] = rssiToDistance(this.lastRSSI[4]);
 
 				if (isValid(distanceInfoTemp))
 					break;
@@ -192,11 +302,20 @@ public class Position {
 	/**
 	 * Met à jour la position en fonction de baliseInfo.
 	 * 
+	 * @param roolback: si true, met à jour la position avec un retour en arrière, sinon, met à jour à la dernière position.
+	 * 
 	 * @return true si la position à changer, false sinon.
 	 */
-	public boolean updatePosition() {
+	public boolean updatePosition(boolean rollback) {
 
-		boolean mooved = updateData();
+		boolean mooved;
+		
+		if (rollback) {
+			mooved = rollbackPosition();
+		}else
+		{
+			mooved = updateData();
+		}
 
 		System.out.println("RSSI -> " + this.distanceInfo.toString());
 
@@ -220,13 +339,12 @@ public class Position {
 		Optimum optimum = solver.solve();
 		centroid = optimum.getPoint().toArray();
 		// System.out.println("RSSI: "+distances.toString());
-		
+
 		this.nbBaliseActive = this.distanceInfo.size();
 		return true;
 	}
-	
-	public int getNbBaliseActive()
-	{
+
+	public int getNbBaliseActive() {
 		return this.nbBaliseActive;
 	}
 

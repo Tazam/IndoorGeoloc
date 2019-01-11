@@ -5,6 +5,7 @@ package com.indoorgeoloc;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -32,7 +33,7 @@ public class PositionPrinting extends JPanel implements ActionListener {
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
-		private final int DELAY = 1000;
+		private final int DELAY = 3000;
 	    private Timer timer;
 	    private Image image;
 	    private Position position;
@@ -125,7 +126,7 @@ public class PositionPrinting extends JPanel implements ActionListener {
 
 	        int w = getWidth();
 	        int h = getHeight();
-	        
+	        g2d.setFont(new Font("TimesRoman", Font.PLAIN, 30));
 	        
 	        // Ajout de la balise 1 sur la map
 	        double xBal = distToPx(position.getBaliseX("1"))+150;
@@ -159,9 +160,9 @@ public class PositionPrinting extends JPanel implements ActionListener {
 	        	Random r = new Random();
 	            int x = Math.abs(r.nextInt()) % w;
 	            int y = Math.abs(r.nextInt()) % h;
-	           */
+	           */     	
 	        
-	        	Boolean mooved = this.position.updatePosition();
+	        	Boolean mooved = this.position.updatePosition(false);
 	        	if (mooved)
 	        	{
 	        		this.xCurr = distToPx(this.position.getCentroid()[0])+150;
@@ -169,7 +170,7 @@ public class PositionPrinting extends JPanel implements ActionListener {
 	        		System.out.println("xCurr: "+this.xCurr+" yCurr: "+this.yCurr);
 	        		int precision = this.position.getNbBaliseActive();
 	        		if (precision==0||precision==3) {
-	        			g2d.setPaint(Color.red);
+	        			g2d.setPaint(Color.red);        			
 	        		}
 	        		if (precision==4) {
 	        			g2d.setPaint(Color.orange);
@@ -177,14 +178,28 @@ public class PositionPrinting extends JPanel implements ActionListener {
 	        		if (precision==5) {
 	        			g2d.setPaint(Color.green);
 	        		}
-	        		
+	        									        		
 	        	}
+	        	int xText = 1200;
+	        	g2d.drawString(Integer.toString(this.position.getNbBaliseActive())+" balises ont été utilisées pour faire la nLatération", 1200, 600);
+	        	
+	        	g2d.drawString("RSSI Balise 1: "+this.position.getLastRSSI(1), xText, 200);
+	        	g2d.drawString("Distance Balise 1: "+this.position.getLastDistance(1), xText, 230);
+				g2d.drawString("RSSI Balise 2: "+this.position.getLastRSSI(2), xText, 260);
+				g2d.drawString("Distance Balise 2: "+this.position.getLastDistance(2), xText, 290);
+				g2d.drawString("RSSI Balise 3: "+this.position.getLastRSSI(3), xText, 320);
+				g2d.drawString("Distance Balise 3: "+this.position.getLastDistance(3), xText, 350);
+				g2d.drawString("RSSI Balise 4: "+this.position.getLastRSSI(4), xText, 390);
+				g2d.drawString("Distance Balise 4: "+this.position.getLastDistance(4), xText, 420);
+				g2d.drawString("RSSI Balise 5: "+this.position.getLastRSSI(5), xText, 450);
+				g2d.drawString("Distance Balise 5: "+this.position.getLastDistance(5), xText, 480);
+				g2d.drawString("Date Dernière position: "+this.position.getLastDate(), xText, 510);
 	            
 	            g2d.fill(new Ellipse2D.Double(xCurr, yCurr, 10, 10));
 	            
-	            Random r = new Random();
-	            int x = Math.abs(r.nextInt()) % w;
-	            int y = Math.abs(r.nextInt()) % h;
+	         //   Random r = new Random();
+	           // int x = Math.abs(r.nextInt()) % w;
+	            //int y = Math.abs(r.nextInt()) % h;
 	            //g2d.fill(new Ellipse2D.Double(x, y, 10, 10));
 	            
 	    }
